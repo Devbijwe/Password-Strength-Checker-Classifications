@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Password Strength Prediction</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.15/dist/tailwind.min.css" rel="stylesheet">
+
+</head>
+
+<body class="bg-gray-100 p-8 flex items-center justify-center h-screen">
+    <div class="bg-white p-8 rounded-lg shadow-md max-w-6xl w-full">
+        <h1 class="text-3xl font-bold mb-4 text-blue-500">Password Strength Prediction</h1>
+        <form id="form" class="mb-4">
+            <label for="user_input" class="block text-gray-700 font-semibold mb-2">Enter your password:</label>
+            <input type="text" name="user_input" id="user_input" class="border p-2 w-full rounded-md focus:outline-none focus:ring-2 focus:ring-blue-300 focus:border-blue-300">
+            <button type="submit" class="bg-blue-500 hover-bg-blue-700 text-white py-2 px-4 rounded-md w-full font-semibold mt-4">Predict</button>
+        </form>
+
+        <div id="result" class="hidden mt-4 text-lg"></div>
+        <div id="properties" class="hidden mt-4">
+            <h2 class="text-2xl font-bold mb-2 text-gray-700">Properties</h2>
+            <div id="propertiesList" class="mt-4 text-lg"></div>
+        </div>
+
+        <div id="suggestions" class="hidden mt-4">
+            <h2 class="text-2xl font-bold mb-2 text-gray-700">Suggestions</h2>
+            <div class="mt-4">
+                <ol id="suggestionsList" class="list-decimal pl-4 text-md"></ol>
+            </div>
+        </div>
+
+    </div>
+    <script>
+        function updateResults(user_input) {
+
+            fetch("/predict", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                    },
+                    body: JSON.stringify({
+                        user_input: user_input,
+                    }),
+                })
+                .then((response) => response.json())
+                .then((data) => {
+
+
+                    var result = document.getElementById("result");
+                    result.innerHTML = '';
+                    var strengthLabel = document.createElement("span");
+                    strengthLabel.textContent = "Predicted Strength: ";
+                    result.appendChild(strengthLabel);
+
+                    if (data.result === "Weak") {
+                        var weakLabel = document.createElement("span");
+                        weakLabel.textContent = data.result;
+                        weakLabel.classList.add("text-red-500", "font-bold", "text-lg");
+                        result.appendChild(weakLabel);
+                    } else if (data.result === "Medium") {
+                        var mediumLabel = document.createElement("span");
+                        mediumLabel.textContent = data.result;
+                        mediumLabel.classList.add("text-yellow-500", "font-bold", "text-lg");
+                        result.appendChild(mediumLabel);
+                    } else if (data.result === "Strong") {
+                        var strongLabel = document.createElement("span");
+                        strongLabel.textContent = data.result;
+                        strongLabel.classList.add("text-green-500", "font-bold", "text-lg");
+                        result.appendChild(strongLabel);
+                    }
+                    // Inside the updateResults function
+                    var inputBorderColor = '';
+                    if (data.result === 'Weak') {
+                        inputBorderColor = 'red';
+                    } else if (data.result === 'Medium') {
+                        inputBorderColor = 'yellow';
+                    } else if (data.result === 'Strong') {
+                        inputBorderColor = 'green';
+                    }
+
+                    document.getElementById('user_input').style.borderColor = inputBorderColor;
+
+                    var propertiesDiv = document.getElementById("properties");
+                    var propertiesList = document.getElementById("propertiesList");
+                    propertiesList.innerHTML = '';
+                    if (data.properties) {
+                        propertiesDiv.classList.remove("hidden");
+                        propertiesList.textContent = data.properties;
+                    } else {
+                        propertiesDiv.classList.add("hidden");
+                    }
+
+                    var suggestionsDiv = document.getElementById("suggestions");
+                    var suggestionsList = document.getElementById("suggestionsList");
+                    suggestionsList.innerHTML = '';
+                    if (data.suggestions) {
+                        suggestionsDiv.classList.remove("hidden");
+                        for (const suggestion of data.suggestions) {
+                            var suggestionItem = document.createElement("li");
+                            suggestionItem.textContent = suggestion;
+                            suggestionsList.appendChild(suggestionItem);
+                        }
+                    } else {
+                        suggestionsDiv.classList.add("hidden");
+                    }
+                });
+        }
+
+        document.getElementById("form").addEventListener("submit", function(e) {
+            e.preventDefault();
+            var user_input = document.getElementById("user_input").value;
+            updateResults(user_input);
+        });
+
+        document.getElementById("user_input").addEventListener("input", function() {
+            var user_input = document.getElementById("user_input").value;
+            // Clear any existing timer
+            clearTimeout(this.typingTimer);
+
+            // Set a new timer
+            this.typingTimer = setTimeout(function() {
+                updateResults(user_input);
+            }, 500);
+        });
+    </script>
+</body>
+
+</html>
